@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import Fastify from 'fastify'
 
 // vi.mock factories are hoisted — declare all mock fns with vi.hoisted()
@@ -41,16 +41,19 @@ const ADMIN_KEY = 'test-admin-key-abc'
 const VALID_ISSUER = 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5'
 
 async function buildApp() {
-  const savedKey = process.env.ADMIN_API_KEY
+  // routes/pairs.ts reads ADMIN_API_KEY at *request* time, not registration
+  // time. Do not restore/delete the key here — that raced with parallel suites
+  // and produced intermittent 401s on the 201 happy-path test.
   process.env.ADMIN_API_KEY = ADMIN_KEY
   const app = Fastify({ logger: false })
   await registerPairsRoutes(app)
   await app.ready()
-  // restore after app init
-  if (savedKey === undefined) delete process.env.ADMIN_API_KEY
-  else process.env.ADMIN_API_KEY = savedKey
   return app
 }
+
+afterEach(() => {
+  delete process.env.ADMIN_API_KEY
+})
 
 beforeEach(() => {
   process.env.ADMIN_API_KEY = ADMIN_KEY

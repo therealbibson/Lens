@@ -15,7 +15,7 @@ const MAINNET_USDC = 'GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN'
 // supposed to fail loudly if the issuer is ignored again.
 let getNetworkConfig: typeof import('../config').getNetworkConfig
 
-beforeAll(async () => {
+beforeEach(async () => {
   process.env.WATCHED_PAIRS_TESTNET = `USDC:${TESTNET_USDC}/XLM`
   vi.resetModules()
   ;({ getNetworkConfig } = await import('../config'))
