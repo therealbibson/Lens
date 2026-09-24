@@ -11,10 +11,9 @@ vi.mock('../db', () => ({
 }))
 
 vi.mock('@stellar/stellar-sdk', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@stellar/stellar-sdk')>()
+  const { mockStellarSdk } = await import('./helpers/stellarSdkMock')
   const callFn = vi.fn()
-  return {
-    ...actual,
+  return mockStellarSdk(importOriginal, {
     Horizon: {
       Server: vi.fn(function() {
         return {
@@ -27,15 +26,8 @@ vi.mock('@stellar/stellar-sdk', async (importOriginal) => {
       vi.fn(function(code, issuer) { return { code, issuer } }),
       { native: vi.fn(() => 'native') }
     ),
-    // config.ts's buildNetworkConfig() falls back to these when no
-    // NETWORK_PASSPHRASE_* env var is set — needed now that getBestRoute
-    // resolves a per-network Horizon client via getNetworkConfig().
-    Networks: {
-      PUBLIC: 'Public Global Stellar Network ; September 2015',
-      TESTNET: 'Test SDF Network ; September 2015',
-    },
     __mockCall: callFn
-  }
+  })
 })
 
 describe('getBestRoute', () => {
