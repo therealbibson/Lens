@@ -17,8 +17,8 @@ vi.mock('../db', () => mocks.db)
 vi.mock('../webhookDispatcher', () => mocks.webhook)
 
 vi.mock('@stellar/stellar-sdk', async (importOriginal) => {
-  const actual = await importOriginal() as any
-  
+  const { mockStellarSdk } = await import('./helpers/stellarSdkMock')
+
   class MockServer {
     constructor() {}
     trades() { return this }
@@ -29,12 +29,11 @@ vi.mock('@stellar/stellar-sdk', async (importOriginal) => {
     call() { return mocks.horizon.mockCall() }
   }
 
-  return {
-    ...actual,
+  return mockStellarSdk(importOriginal, {
     Horizon: {
       Server: MockServer,
     },
-  }
+  })
 })
 
 // ── Imports ──────────────────────────────────────────────────────────────────
