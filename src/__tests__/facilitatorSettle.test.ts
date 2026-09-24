@@ -30,6 +30,16 @@ vi.mock('../db', () => ({
   },
 }))
 
+// Spend-ceiling ledger (#147). Generous in-memory totals so existing settle
+// tests keep exercising settlement / idempotency rather than the daily cap.
+vi.mock('../redis', () => ({
+  redis: {
+    incrby: vi.fn().mockResolvedValue(100),
+    decrby: vi.fn().mockResolvedValue(0),
+    expire: vi.fn().mockResolvedValue(1),
+  },
+}))
+
 vi.mock('../x402/facilitator', async importOriginal => {
   const actual = (await importOriginal()) as Record<string, unknown>
   return { ...actual, getFacilitator: mockGetFacilitator }
