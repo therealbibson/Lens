@@ -36,11 +36,10 @@ vi.mock('../x402/facilitator', async importOriginal => {
 })
 
 vi.mock('@stellar/stellar-sdk', async importOriginal => {
-  const actual = (await importOriginal()) as Record<string, unknown>
-  return {
-    ...actual,
+  const { mockStellarSdk } = await import('./helpers/stellarSdkMock')
+  return mockStellarSdk(importOriginal, {
     rpc: { Server: class { getTransaction = mockGetTransaction } },
-  }
+  })
 })
 
 import { registerSettleRoute, deriveIdempotencyKey, SETTLE_ERROR_REASONS } from '../routes/facilitator'
