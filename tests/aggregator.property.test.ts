@@ -55,7 +55,10 @@ describe('Price aggregator property tests', () => {
   // this test failed before running a single iteration — the mocked
   // @stellar/stellar-sdk had no Networks export, which getNetworkConfig()
   // needs); that volume of real work needs more than the 5s default.
-  it('produces valid route results for random venue prices', { timeout: 30000 }, async () => {
+  // Under pool:'forks' (required for process.env isolation) a full parallel
+  // suite contends for CPU; 10k async property iterations need headroom
+  // beyond the prior 30s ceiling that timed out ~1/10 solo runs.
+  it('produces valid route results for random venue prices', { timeout: 120_000 }, async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.float({ min: 0, max: 2000, noNaN: true, noDefaultInfinity: true, noNegativeZero: true }),
@@ -119,5 +122,5 @@ describe('Price aggregator property tests', () => {
       ),
       { numRuns: 10000 }
     )
-  }, 15000)
+  })
 })

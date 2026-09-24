@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import Fastify from 'fastify'
 
 // vi.mock factories are hoisted — declare all mock fns with vi.hoisted()
@@ -41,14 +41,12 @@ const ADMIN_KEY = 'test-admin-key-abc'
 const VALID_ISSUER = 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5'
 
 async function buildApp() {
-  const savedKey = process.env.ADMIN_API_KEY
+  // Keep ADMIN_API_KEY set through inject — the route reads it at request time.
+  // Restoring here (before inject) raced with parallel files mutating process.env.
   process.env.ADMIN_API_KEY = ADMIN_KEY
   const app = Fastify({ logger: false })
   await registerPairsRoutes(app)
   await app.ready()
-  // restore after app init
-  if (savedKey === undefined) delete process.env.ADMIN_API_KEY
-  else process.env.ADMIN_API_KEY = savedKey
   return app
 }
 
@@ -59,6 +57,10 @@ beforeEach(() => {
   mockPersistPair.mockReset().mockResolvedValue(undefined)
   mockGetActivePairs.mockReset().mockReturnValue([])
   mockQuery.mockReset().mockResolvedValue({ rows: [] })
+})
+
+afterEach(() => {
+  delete process.env.ADMIN_API_KEY
 })
 
 describe('POST /pairs', () => {
