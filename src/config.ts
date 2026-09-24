@@ -44,8 +44,14 @@ export interface NetworkConfig {
   facilitator: {
     /** Secret key for the facilitator's fee-paying account */
     secretKey?: string
-    /** Maximum fee in stroops the facilitator will pay */
+    /** Maximum fee in stroops the facilitator will pay per settlement (#147) */
     feeStroops: number
+    /**
+     * Rolling UTC-day spend ceiling (stroops) for sponsored fees on this
+     * network. Independent of the per-settlement cap. Tracked in Redis and
+     * enforced fail-closed (#147).
+     */
+    dailySpendCeilingStroops: number
   }
 }
 
@@ -192,6 +198,16 @@ function buildNetworkConfig(network: NetworkName): NetworkConfig {
     10
   )
 
+  // Per-network daily ceilings: mainnet defaults tighter than testnet so a
+  // drained test faucet cannot be confused with mainnet exposure (#147).
+  const facilitatorDailyDefault = network === 'mainnet' ? '10000000' : '100000000'
+  const facilitatorDailySpendCeilingStroops = parseInt(
+    process.env[`FACILITATOR_DAILY_SPEND_STROOPS_${suffix}`] ||
+    process.env.FACILITATOR_DAILY_SPEND_STROOPS ||
+    facilitatorDailyDefault,
+    10
+  )
+
   return {
     horizon: { url: horizonUrl },
     rpc: { url: rpcUrl },
@@ -208,7 +224,11 @@ function buildNetworkConfig(network: NetworkName): NetworkConfig {
     },
     oracle: { enabled: oracleEnabled, reflectorContractId },
     pairs: parseWatchedPairs(rawPairs),
-    facilitator: { secretKey: facilitatorSecretKey, feeStroops: facilitatorFeeStroops },
+    facilitator: {
+      secretKey: facilitatorSecretKey,
+      feeStroops: facilitatorFeeStroops,
+      dailySpendCeilingStroops: facilitatorDailySpendCeilingStroops,
+    },
   }
 }
 
