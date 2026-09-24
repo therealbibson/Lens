@@ -11,10 +11,9 @@ vi.mock('../src/db', () => ({
 }))
 
 vi.mock('@stellar/stellar-sdk', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@stellar/stellar-sdk')>()
+  const { mockStellarSdk } = await import('../src/__tests__/helpers/stellarSdkMock')
   const callFn = vi.fn()
-  return {
-    ...actual,
+  return mockStellarSdk(importOriginal, {
     Horizon: {
       Server: vi.fn(function () {
         return {
@@ -29,15 +28,8 @@ vi.mock('@stellar/stellar-sdk', async (importOriginal) => {
       }),
       { native: vi.fn(() => 'native') }
     ),
-    // config.ts's buildNetworkConfig() falls back to these when no
-    // NETWORK_PASSPHRASE_* env var is set — needed now that getBestRoute
-    // resolves a per-network Horizon client via getNetworkConfig().
-    Networks: {
-      PUBLIC: 'Public Global Stellar Network ; September 2015',
-      TESTNET: 'Test SDF Network ; September 2015',
-    },
     __mockCall: callFn,
-  }
+  })
 })
 
 describe('Price aggregator property tests', () => {
@@ -51,10 +43,9 @@ describe('Price aggregator property tests', () => {
     vi.clearAllMocks()
   })
 
-  // 10,000 fast-check runs of getBestRoute now actually execute (previously
-  // this test failed before running a single iteration — the mocked
-  // @stellar/stellar-sdk had no Networks export, which getNetworkConfig()
-  // needs); that volume of real work needs more than the 5s default.
+  // 10,000 fast-check runs of getBestRoute — needs >5s default. Historically
+  // this suite aborted immediately when the stellar-sdk mock omitted Networks
+  // (ESM spread drops non-enumerable exports); mockStellarSdk preserves them.
   it('produces valid route results for random venue prices', { timeout: 30000 }, async () => {
     await fc.assert(
       fc.asyncProperty(
