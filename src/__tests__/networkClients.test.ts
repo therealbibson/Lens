@@ -3,12 +3,11 @@
  */
 
 vi.mock('@stellar/stellar-sdk', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@stellar/stellar-sdk')>()
-  return {
-    ...actual,
+  const { mockStellarSdk } = await import('./helpers/stellarSdkMock')
+  return mockStellarSdk(importOriginal, {
     Horizon: { Server: vi.fn(function (url: string) { return { __url: url } }) },
     rpc: { Server: vi.fn(function (url: string) { return { __url: url } }) },
-  }
+  })
 })
 
 import { getHorizonServer, getRpcServer } from '../network/clients'
